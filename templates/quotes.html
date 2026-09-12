@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>{{ category }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #121212;
+            padding: 20px;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .list {
+            padding: 1rem;
+        }
+
+        .item {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #2c2c2c;
+            font-size: 1.2rem;
+            word-break: break-word;
+            transition: background 0.2s;
+            color: #e0e0e0;
+            cursor: pointer;
+            user-select: none; /* предотвращает выделение текста при быстром двойном клике */
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item:hover {
+            background: #2a2a2a;
+        }
+
+        /* Стили для уведомления */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Для мобильных устройств */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            .item {
+                font-size: 1rem;
+                padding: 0.9rem 1rem;
+            }
+            .toast {
+                font-size: 0.8rem;
+                padding: 8px 16px;
+                white-space: nowrap;
+            }
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: #f28b82;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="list" id="itemList">
+            {% for item in items %}
+                <div class="item" data-copy-text="{% if item is string %}{{ item }}{% elif item is mapping %}{{ item.get('name', item.get('title', item)) }}{% else %}{{ item }}{% endif %}">
+                    {% if item is string %}
+                        {{ item }}
+                    {% elif item is mapping %}
+                        {{ item.get('name', item.get('title', item)) }}
+                    {% else %}
+                        {{ item }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Элемент для всплывающего уведомления -->
+    <div id="toast" class="toast">Скопировано!</div>
+
+     <script>
+        const list = document.getElementById('itemList');
+        const toast = document.getElementById('toast');
+
+        function showToast(message) {
+            toast.textContent = message || 'Скопировано!';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // Восстанавливаем стандартный текст через секунду после скрытия
+                setTimeout(() => {
+                    if (toast.textContent !== 'Скопировано!') {
+                        toast.textContent = 'Скопировано!';
+                    }
+                }, 300);
+            }, 1500);
+        }
+
+        // Универсальная функция копирования
+        async function copyToClipboard(text) {
+            // Современный способ
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (err) {
+                    console.warn('Clipboard API failed, trying fallback', err);
+                }
+            }
+
+            // Fallback через execCommand
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                // Скрываем элемент
+                textarea.style.position = 'fixed';
+                textarea.style.top = '-100px';
+                textarea.style.left = '-100px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return success;
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+                return false;
+            }
+        }
+
+        list.addEventListener('click', async (e) => {
+            const item = e.target.closest('.item');
+            if (!item) return;
+
+            const textToCopy = item.getAttribute('data-copy-text');
+            if (textToCopy) {
+                const success = await copyToClipboard(textToCopy);
+                if (success) {
+                    showToast();
+                } else {
+                    showToast('❌ Не удалось скопировать');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
