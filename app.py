@@ -6,28 +6,14 @@ client = MongoClient()
 db = client['quote_gun']
 quotes_collection = db['quotes']
 
-@app.route('/all')
+@app.route('/')
 def all():
     categories = quotes_collection.distinct('category')
+    exclude = ['svetlana_anatolyevna']
     categories.sort()
-    return render_template('main.html', categories=categories)
-
-@app.route('/main')
-def main():
-    categories = quotes_collection.distinct('category')
-    categories.sort()
-    exclude = ['svetlana_anatolyevna', 'shtomnepokushac']
     for i in exclude:
         categories.remove(i)
-    return render_template('main.html', categories=categories)
-
-@app.route('/chance')
-def chance():
-    categories = quotes_collection.distinct('category')
-    categories.sort()
-    exclude = ['svetlana_anatolyevna', 'vahtang']
-    for i in exclude:
-        categories.remove(i)
+        categories.sort()
     return render_template('main.html', categories=categories)
 
 @app.route('/<category>')
