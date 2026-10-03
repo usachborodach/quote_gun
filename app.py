@@ -1,7 +1,7 @@
 from flask import Flask, render_template, send_from_directory
 from pymongo import MongoClient
 
-HIDDEN_CATEGORIES = ['svetlana_anatolyevna', 'fake_chinese']
+HIDDEN_CATEGORIES = ['svetlana_anatolyevna', 'fake_chinese', 'jokes']
 
 app = Flask(__name__)
 client = MongoClient()
