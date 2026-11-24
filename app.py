@@ -1,31 +1,43 @@
-from flask import Flask, render_template, send_from_directory
-from pymongo import MongoClient
+import os
+import random
 
-HIDDEN_CATEGORIES = ['svetlana_anatolyevna', 'fake_chinese', 'jokes']
+import yaml
+from flask import Flask, abort, render_template, send_from_directory
+
+HIDDEN_CATEGORIES = ['svetlana_anatolyevna', 'jokes']
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 app = Flask(__name__)
-client = MongoClient()
-db = client['quote_gun']
-quotes_collection = db['quotes']
+
+
+def category_exists(category):
+    return (
+        os.path.basename(category) == category
+        and os.path.isfile(os.path.join(DATA_DIR, category + '.yml'))
+    )
+
 
 @app.route('/')
 def all():
-    categories = quotes_collection.distinct('category')
-    categories.sort()
+    categories = sorted(
+        os.path.splitext(f)[0] for f in os.listdir(DATA_DIR) if f.endswith('.yml')
+    )
     for i in HIDDEN_CATEGORIES:
-        categories.remove(i)
-        categories.sort()
+        if i in categories:
+            categories.remove(i)
     return render_template('main.html', categories=categories)
+
 
 @app.route('/<category>')
 def quotes_by_category(category):
-    pipeline = [
-        {"$match": {"category": category}},
-        {"$sample": {"size": 10}}
-    ]
-    docs = list(quotes_collection.aggregate(pipeline))
-    items = [doc['text'] for doc in docs]
+    if not category_exists(category):
+        abort(404)
+    path = os.path.join(DATA_DIR, category + '.yml')
+    with open(path, encoding='utf-8') as f:
+        quotes = yaml.safe_load(f)
+    items = random.sample(quotes, min(10, len(quotes)))
     return render_template('quotes.html', items=items, category=category)
+
 
 @app.route('/favicon.png')
 def favicon():
