@@ -8,6 +8,8 @@ HIDDEN_CATEGORIES = ['svetlana_anatolyevna', 'jokes']
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 app = Flask(__name__)
+# отдаём кириллицу как есть, а не \uXXXX-эскейпами (меньше трафика)
+app.json.ensure_ascii = False
 
 
 def category_exists(category):
